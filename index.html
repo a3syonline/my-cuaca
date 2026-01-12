@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MY Cuaca</title>
+    <title>MY Cuaca - Dashboard Risiko</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -15,14 +15,24 @@
         h1 { color: var(--accent); margin: 0; font-size: 2.5rem; }
         h3 { border-left: 4px solid var(--accent); padding-left: 10px; margin: 30px 0 15px 0; }
 
+        /* RISK CONSOLE STYLES */
+        .risk-console { background: #1a202c; border: 2px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
+        .risk-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .status-time { font-size: 0.8rem; color: #94a3b8; }
+        
+        .risk-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #2d3748; gap: 15px; }
+        .risk-item span:first-child { font-weight: bold; min-width: 140px; }
+        .risk-item span:last-child { text-align: right; flex: 1; }
+
+        .status-none { color: var(--success); font-weight: bold; }
+        .status-alert { color: var(--danger); font-weight: bold; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* GRID STYLES */
         .region-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .region-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
         .region-title { font-weight: bold; color: var(--accent); font-size: 1.1rem; margin-bottom: 10px; display: block; }
-        
-        .risk-console { background: #1a202c; border: 2px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
-        .risk-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2d3748; }
-        .status-none { color: var(--success); font-weight: bold; }
-        .status-alert { color: var(--danger); font-weight: bold; }
 
         .forecast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
         .state-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 15px; text-align: center; cursor: pointer; transition: 0.3s; }
@@ -30,6 +40,7 @@
         .state-card .temp { font-size: 1.8rem; font-weight: bold; display: block; margin: 5px 0; }
         .state-card .desc { font-size: 0.8rem; color: #94a3b8; }
 
+        /* MODAL STYLES */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); overflow-y: auto; }
         .modal-content { background: var(--card); margin: 2% auto; padding: 2.5rem; width: 90%; max-width: 1000px; border-radius: 15px; border: 1px solid var(--accent); position: relative; }
         .close-btn { position: absolute; right: 20px; top: 15px; font-size: 2rem; cursor: pointer; }
@@ -37,7 +48,16 @@
         .day-header { font-size: 1.1rem; font-weight: bold; color: var(--accent); margin-bottom: 8px; }
         .drill-flex { display: grid; grid-template-columns: 1fr 320px; gap: 30px; }
         .time-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem; border-bottom: 1px dotted #334155; }
-        @media (max-width: 850px) { .drill-flex { grid-template-columns: 1fr; } .region-grid { grid-template-columns: 1fr; } }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 850px) {
+            .drill-flex { grid-template-columns: 1fr; }
+            .region-grid { grid-template-columns: 1fr; }
+            .risk-item { flex-direction: column; align-items: flex-start; gap: 5px; }
+            .risk-item span:last-child { text-align: left; }
+            h1 { font-size: 1.8rem; }
+            body { padding: 1rem; }
+        }
     </style>
 </head>
 <body>
@@ -47,17 +67,18 @@
         <p>Ramalan Cuaca Langsung & Pengurusan Risiko Bencana</p>
     </header>
 
-    
-
     <div class="region-grid">
         <div class="region-card"><span class="region-title">📍 Malaysia Barat (Semenanjung)</span><div id="west-summary">Memuatkan ramalan...</div></div>
         <div class="region-card"><span class="region-title">📍 Malaysia Timur (Sabah & Sarawak)</span><div id="east-summary">Memuatkan ramalan...</div></div>
     </div>
 
     <div class="risk-console">
-        <h4 style="margin-top:0; color:var(--warning);">🛡️ Konsol Pengurusan Risiko Bencana</h4>
+        <div class="risk-header">
+            <h4 style="margin:0; color:var(--warning);">🛡️ Konsol Pengurusan Risiko Bencana</h4>
+            <span class="status-time" id="last-update">Mengemaskini...</span>
+        </div>
         <div id="risk-list">
-            <div class="risk-item"><span>Status Risiko</span><span class="status-none">MEMUATKAN...</span></div>
+            <div class="risk-item"><span>Status</span><span class="status-none">MEMUATKAN DATA KERAJAAN...</span></div>
         </div>
     </div>
 
@@ -85,49 +106,98 @@
     <script>
         const westStates = ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Perak", "Perlis", "Pulau Pinang", "Selangor", "Terengganu", "W.P. Kuala Lumpur", "W.P. Putrajaya"];
         const eastStates = ["Sabah", "Sarawak", "W.P. Labuan"];
-        
         let apiData = [];
         let myChart = null;
 
         async function initDashboard() {
             try {
-                // Stabilized HTTPS API Request
+                // Fetch basic forecast
                 const res = await fetch('https://api.data.gov.my/weather/forecast?contains=St@location__location_id');
-                if (!res.ok) throw new Error('Network response was not ok');
                 const result = await res.json();
-                
                 apiData = Array.isArray(result) ? result : [];
                 
                 renderGrid(westStates, 'west-grid');
                 renderGrid(eastStates, 'east-grid');
                 updateRegionalSummaries();
+                
+                // Fetch Disaster Data
                 updateRiskConsole();
             } catch (e) {
                 console.error("Gagal memuatkan data", e);
-                document.getElementById('risk-list').innerHTML = `<div class="risk-item"><span>Status</span><span class="status-alert">RALAT API: Sila cuba sebentar lagi.</span></div>`;
+                document.getElementById('risk-list').innerHTML = `<div class="risk-item"><span>Status</span><span class="status-alert">RALAT API: Sila cuba lagi.</span></div>`;
+            }
+        }
+
+        async function updateRiskConsole() {
+            const riskList = document.getElementById('risk-list');
+            const updateTime = document.getElementById('last-update');
+            const now = new Date();
+            updateTime.innerText = `Kemas kini: ${now.toLocaleTimeString('ms-MY')}`;
+
+            try {
+                // Fetch Earthquake and General Warnings
+                const [warnRes, eqRes] = await Promise.all([
+                    fetch('https://api.data.gov.my/weather/warning'),
+                    fetch('https://api.data.gov.my/weather/warning/earthquake?limit=1')
+                ]);
+
+                const warnings = await warnRes.json();
+                const earthquakes = await eqRes.json();
+                const latestEq = earthquakes[0];
+
+                // 1. Analyze Flood Risk (Continuous Rain)
+                const floodAlerts = warnings.filter(w => 
+                    w.title_bm.toLowerCase().includes("hujan berterusan") || 
+                    w.title_en.toLowerCase().includes("continuous rain")
+                );
+
+                // 2. Analyze Tsunami Risk
+                const tsunamiAlerts = warnings.filter(w => 
+                    w.title_bm.toLowerCase().includes("tsunami") || 
+                    w.text_bm.toLowerCase().includes("tsunami")
+                );
+
+                // 3. Analyze Earthquake (Significant if Mag > 4 or in Malaysia)
+                const isEqRisk = latestEq && (latestEq.mag > 4.5 || latestEq.nbm_distancemas.includes("km"));
+
+                riskList.innerHTML = `
+                    <div class="risk-item">
+                        <span>🌊 Amaran Banjir</span>
+                        <span class="${floodAlerts.length > 0 ? 'status-alert' : 'status-none'}">
+                            ${floodAlerts.length > 0 ? floodAlerts.map(f => f.title_bm).join(" | ") : 'TIADA AMARAN AKTIF'}
+                        </span>
+                    </div>
+                    <div class="risk-item">
+                        <span>🚨 Amaran Tsunami</span>
+                        <span class="${tsunamiAlerts.length > 0 ? 'status-alert' : 'status-none'}">
+                            ${tsunamiAlerts.length > 0 ? tsunamiAlerts[0].title_bm : 'TIADA ANCAMAN'}
+                        </span>
+                    </div>
+                    <div class="risk-item">
+                        <span>震 Gempa Bumi</span>
+                        <span class="${isEqRisk ? 'status-alert' : 'status-none'}">
+                            ${latestEq ? `${latestEq.mag} SR - ${latestEq.location} (${latestEq.nbm_distancemas})` : 'TIADA DATA'}
+                        </span>
+                    </div>
+                `;
+            } catch (error) {
+                riskList.innerHTML = `<div class="risk-item"><span>Status</span><span class="status-alert">RALAT: Gagal tarik data dari gov API.</span></div>`;
             }
         }
 
         function renderGrid(list, elementId) {
             const grid = document.getElementById(elementId);
             grid.innerHTML = "";
-            
             list.forEach(state => {
-                const stateData = apiData.find(d => 
-                    d.location.location_name.toLowerCase().includes(state.toLowerCase().replace('w.p. ', ''))
-                );
-
+                const stateData = apiData.find(d => d.location.location_name.toLowerCase().includes(state.toLowerCase().replace('w.p. ', '')));
                 if (stateData) {
-                    const displayTemp = stateData.temp_max || stateData.max_temp || 31;
-                    const displayDesc = stateData.morning_forecast || stateData.summary_forecast || "Berawan";
-
                     const card = document.createElement('div');
                     card.className = 'state-card';
                     card.onclick = () => openDrill(state, stateData);
                     card.innerHTML = `
                         <strong>${state}</strong>
-                        <span class="temp">${displayTemp}°C</span>
-                        <span class="desc">${displayDesc}</span>
+                        <span class="temp">${stateData.temp_max || 31}°C</span>
+                        <span class="desc">${stateData.morning_forecast}</span>
                     `;
                     grid.appendChild(card);
                 }
@@ -137,47 +207,28 @@
         function updateRegionalSummaries() {
             const kl = apiData.find(d => d.location.location_name.includes("Kuala Lumpur"));
             const sabah = apiData.find(d => d.location.location_name.includes("Sabah"));
-            
-            if(kl) document.getElementById('west-summary').innerHTML = `Ramalan: <strong>${kl.summary_forecast || kl.morning_forecast}</strong>.`;
-            if(sabah) document.getElementById('east-summary').innerHTML = `Ramalan: <strong>${sabah.summary_forecast || sabah.morning_forecast}</strong>.`;
-        }
-
-        function updateRiskConsole() {
-            // Checks for 'Ribut Petir' alerts in the raw afternoon data
-            const warnings = apiData.filter(d => d.afternoon_forecast && d.afternoon_forecast.includes("Ribut Petir")).length;
-            const riskList = document.getElementById('risk-list');
-            
-            riskList.innerHTML = `
-                <div class="risk-item"><span>Amaran Ribut Petir</span><span class="${warnings > 0 ? 'status-alert' : 'status-none'}">${warnings > 0 ? 'AKTIF ('+warnings+' Kawasan)' : 'TIADA'}</span></div>
-                <div class="risk-item"><span>Risiko Banjir / Tsunami</span><span class="status-none">TIADA</span></div>
-            `;
+            if(kl) document.getElementById('west-summary').innerHTML = `Ramalan: <strong>${kl.summary_forecast}</strong>.`;
+            if(sabah) document.getElementById('east-summary').innerHTML = `Ramalan: <strong>${sabah.summary_forecast}</strong>.`;
         }
 
         function openDrill(name, data) {
-            document.getElementById('modalTitle').innerText = name + " (Ramalan 7 Hari)";
+            document.getElementById('modalTitle').innerText = name + " (7 Hari)";
             document.getElementById('drillModal').style.display = "block";
             const cont = document.getElementById('sevenDayContainer');
             cont.innerHTML = "";
-            
-            const locationName = data.location.location_name;
-            const history = apiData.filter(d => d.location.location_name === locationName).slice(0, 7);
-            
+            const history = apiData.filter(d => d.location.location_name === data.location.location_name).slice(0, 7);
             history.forEach(day => {
-                // Normalized date parsing for Safari compatibility
-                const dateParts = day.date.split('-');
-                const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-                
+                const d = new Date(day.date);
                 cont.innerHTML += `
                     <div class="day-block">
-                        <div class="day-header">${dateObj.toLocaleDateString('ms-MY', {weekday: 'long', day: 'numeric', month: 'numeric'})}</div>
+                        <div class="day-header">${d.toLocaleDateString('ms-MY', {weekday: 'long', day: 'numeric', month: 'numeric'})}</div>
                         <div class="time-row"><span>Pagi</span><span>${day.morning_forecast}</span></div>
                         <div class="time-row"><span>Tengah Hari</span><span>${day.afternoon_forecast}</span></div>
                         <div class="time-row"><span>Malam</span><span>${day.night_forecast}</span></div>
                     </div>`;
             });
-
-            document.getElementById('modalSummary').innerHTML = `<strong>Analisis:</strong> Suhu maksimum dijangka sekitar ${data.temp_max || 31}°C. Berdasarkan tren kelembapan, sila sediakan payung jika berada di luar rumah.`;
-            renderPie([35, 25, 20, 20]);
+            document.getElementById('modalSummary').innerHTML = `<strong>Analisis MET:</strong> Suhu maksimum ${data.temp_max || 31}°C. Ambil langkah berjaga-jaga jika ribut petir diramalkan.`;
+            renderPie([30, 40, 10, 20]);
         }
 
         function renderPie(chartData) {
@@ -197,6 +248,8 @@
         window.onclick = (e) => { if(e.target.id === 'drillModal') closeModal(); }
 
         initDashboard();
+        // Auto-refresh console every 5 minutes
+        setInterval(updateRiskConsole, 300000);
     </script>
 </body>
 </html>
