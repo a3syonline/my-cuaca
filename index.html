@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MY Cuaca</title>
+    <title>MY Cuaca | Ramalan Malaysia</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { 
@@ -11,180 +11,209 @@
             --border: #334155; --danger: #f87171; --warning: #fbbf24; --success: #4ade80;
         }
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 1.5rem; line-height: 1.6; overflow-x: hidden; }
-        header { border-bottom: 1px solid var(--border); margin-bottom: 2rem; padding-bottom: 1rem; }
-        h1 { color: var(--accent); margin: 0; font-size: 2rem; }
-        h3 { border-left: 4px solid var(--accent); padding-left: 10px; margin: 30px 0 15px 0; }
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 1.5rem; 
+            line-height: 1.6; 
+            overflow-x: hidden; 
+        }
+        
+        header { 
+            text-align: center; 
+            border-bottom: 1px solid var(--border); 
+            margin-bottom: 2.5rem; 
+            padding-bottom: 1.5rem; 
+        }
+        h1 { color: var(--accent); margin: 0; font-size: 2.5rem; letter-spacing: -1px; }
+        header p { font-size: 1rem; opacity: 0.7; margin-top: 5px; }
 
-        /* REGION SUMMARY CARDS */
-        .region-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .region-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); position: relative; overflow: hidden; }
-        .region-title { font-weight: bold; color: var(--accent); font-size: 1rem; margin-bottom: 5px; display: block; z-index: 2; position: relative; }
-
-        /* STATE GRID */
+        /* UNIFIED CENTERED GRID */
         .forecast-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 12px; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 20px; 
             width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            justify-content: center;
         }
+
         .state-card { 
             background: var(--card); 
             border: 1px solid var(--border); 
-            border-radius: 12px; 
-            padding: 15px; 
+            border-radius: 16px; 
+            padding: 20px; 
             text-align: center; 
             cursor: pointer; 
-            transition: 0.2s;
-            min-height: 120px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            z-index: 1;
         }
-        .state-card:hover { border-color: var(--accent); background: #243146; transform: translateY(-3px); }
-        .state-card strong, .state-card .temp, .state-card .desc { position: relative; z-index: 2; }
-        .state-card strong { font-size: 0.9rem; display: block; margin-bottom: 5px; }
-        .state-card .temp { font-size: 1.5rem; font-weight: bold; color: var(--text); }
-        .state-card .desc { font-size: 0.75rem; color: #94a3b8; margin-top: 5px; }
+        .state-card:hover { 
+            border-color: var(--accent); 
+            transform: translateY(-8px); 
+            box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.4); 
+        }
 
-        /* --- KESAN CUACA (EFFECTS) --- */
+        .state-name { font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; z-index: 5; position: relative; }
+        .temp-main { font-size: 2.2rem; font-weight: bold; margin: 10px 0; display: block; z-index: 5; position: relative; }
+        .summary-text { font-size: 0.85rem; color: #94a3b8; min-height: 40px; margin-bottom: 15px; z-index: 5; position: relative; }
+
+        /* TODAY INFO SECTION (Main Page) */
+        .today-mini-info {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.8rem;
+            text-align: left;
+            border: 1px solid rgba(255,255,255,0.05);
+            z-index: 5;
+            position: relative;
+        }
+        .mini-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .mini-row:last-child { border: none; }
+        .mini-label { color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 0.7rem; }
+        .mini-val { text-align: right; color: var(--text); padding-left: 10px; }
+
+        /* --- INTENSIFIED EFFECTS --- */
         
-        /* 1. Sun Shine Effect */
+        /* Fast & Bright Sun Pulse */
         .effect-sun::before {
-            content: ''; position: absolute; top: -20px; right: -20px; width: 60px; height: 60px;
-            background: radial-gradient(circle, #fbbf24 0%, transparent 70%);
-            border-radius: 50%; box-shadow: 0 0 20px #fbbf24;
-            animation: pulse-sun 3s infinite alternate; z-index: 1;
+            content: ''; position: absolute; top: -20px; right: -20px; width: 100px; height: 100px;
+            background: radial-gradient(circle, #fbbf24 0%, #fbbf24 20%, transparent 70%);
+            border-radius: 50%; opacity: 0.6; 
+            animation: pulse-sun-fast 1.5s infinite alternate ease-in-out;
+            z-index: 2;
         }
-        @keyframes pulse-sun { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.3); opacity: 1; } }
-
-        /* 2. Rainbow Rays Effect */
-        .effect-rainbow::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
-            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-            opacity: 0.3; filter: blur(2px); animation: rainbow-move 5s linear infinite; z-index: 1;
+        @keyframes pulse-sun-fast { 
+            from { transform: scale(1); opacity: 0.4; filter: blur(5px); } 
+            to { transform: scale(1.6); opacity: 0.9; filter: blur(2px); } 
         }
-        @keyframes rainbow-move { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 
-        /* 3. Lightning Rain Effect */
-        .effect-lightning { background: linear-gradient(to bottom, #1e293b, #0f172a); }
+        /* Rapid Lightning Flash */
+        .effect-lightning { background: #131c2e; }
         .effect-lightning::before {
             content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0;
-            background: white; opacity: 0; pointer-events: none;
-            animation: flash 6s infinite; z-index: 1;
+            background: #ffffff; opacity: 0; pointer-events: none; 
+            animation: flash-rapid 4s infinite; 
+            z-index: 2;
         }
-        @keyframes flash { 
-            0%, 90%, 94%, 100% { opacity: 0; } 
-            92%, 95% { opacity: 0.15; } 
+        @keyframes flash-rapid { 
+            0%, 88%, 92%, 96%, 100% { opacity: 0; } 
+            90%, 94% { opacity: 0.3; } 
+            91% { opacity: 0.05; }
         }
 
-        /* MODAL RESPONSIVENESS */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); overflow-y: auto; }
-        .modal-content { 
-            background: var(--card); 
-            margin: 20px auto; padding: 20px; width: 95%; max-width: 900px; 
-            border-radius: 15px; border: 1px solid var(--accent); position: relative; 
-        }
-        .close-btn { position: absolute; right: 15px; top: 10px; font-size: 2rem; cursor: pointer; color: var(--text); }
-        .drill-flex { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
-        @media (max-width: 800px) { .drill-flex { grid-template-columns: 1fr; } }
-        .day-block { margin-bottom: 20px; background: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 8px; }
-        .day-header { font-size: 1rem; font-weight: bold; color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid var(--border); }
-        .time-row { display: flex; flex-wrap: wrap; justify-content: space-between; padding: 8px 0; font-size: 0.9rem; border-bottom: 1px dotted #334155; gap: 10px; }
-        .time-label { font-weight: bold; color: #94a3b8; min-width: 80px; }
-        .time-status { flex: 1; text-align: right; min-width: 150px; }
+        /* MODAL */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); overflow-y: auto; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card); margin: 30px auto; padding: 25px; width: 95%; max-width: 950px; border-radius: 24px; border: 1px solid var(--border); position: relative; }
+        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 2.2rem; cursor: pointer; color: var(--text); transition: 0.2s; }
+        .close-btn:hover { color: var(--danger); }
+        
+        .drill-flex { display: grid; grid-template-columns: 1fr 320px; gap: 25px; margin-top: 20px; }
+        @media (max-width: 850px) { .drill-flex { grid-template-columns: 1fr; } }
+        
+        .day-block { margin-bottom: 12px; background: #0f172a; padding: 18px; border-radius: 16px; border: 1px solid var(--border); }
+        .day-header { font-weight: bold; color: var(--accent); margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid #1e293b; padding-bottom: 8px; display: flex; justify-content: space-between; }
+        
+        .modal-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+        .info-item { font-size: 0.8rem; }
+        .info-label { display: block; color: #64748b; font-size: 0.7rem; text-transform: uppercase; }
 
-        @media (max-width: 480px) {
-            .time-status { text-align: left; }
-            body { padding: 10px; }
-            h1 { font-size: 1.5rem; }
-        }
+        canvas { max-width: 100%; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>MY Cuaca</h1>
-        <p style="font-size: 0.9rem; opacity: 0.8;">Ramalan Cuaca 7 Hari Malaysia</p>
+        <p>Ramalan Cuaca Terkini Seluruh Malaysia</p>
     </header>
 
-    <div class="region-grid">
-        <div class="region-card"><span class="region-title">📍 Semenanjung</span><div id="west-summary">...</div></div>
-        <div class="region-card"><span class="region-title">📍 Borneo</span><div id="east-summary">...</div></div>
-    </div>
-
-    <h3>Semenanjung</h3>
-    <div class="forecast-grid" id="west-grid"></div>
-
-    <h3>Borneo</h3>
-    <div class="forecast-grid" id="east-grid"></div>
+    <div class="forecast-grid" id="main-grid"></div>
 
     <div id="drillModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 id="modalTitle" style="font-size: 1.3rem; color: var(--accent);">Perincian</h2>
+            <h2 id="modalTitle" style="color: var(--accent); margin-top: 0;"></h2>
             <div class="drill-flex">
                 <div id="sevenDayContainer"></div>
                 <div>
-                    <h4 style="margin-top:0;">Analisis Visual</h4>
-                    <div id="modalSummary" style="background: #0f172a; padding: 12px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px;"></div>
-                    <div style="height: 200px;"><canvas id="drillPieChart"></canvas></div>
+                    <h4 style="margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Analisis Trend</h4>
+                    <div id="modalSummary" style="background: #0f172a; padding: 15px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 20px; border: 1px solid var(--border); line-height: 1.5;"></div>
+                    <div style="height: 280px;"><canvas id="drillPieChart"></canvas></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const westStates = ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Perak", "Perlis", "Pulau Pinang", "Selangor", "Terengganu", "W.P. Kuala Lumpur", "W.P. Putrajaya"];
-        const eastStates = ["Sabah", "Sarawak", "W.P. Labuan"];
+        const allStates = [
+            "Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", 
+            "Perak", "Perlis", "Pulau Pinang", "Selangor", "Terengganu", 
+            "W.P. Kuala Lumpur", "W.P. Putrajaya", "Sabah", "Sarawak", "W.P. Labuan"
+        ];
+        
         let apiData = [];
         let myChart = null;
 
         async function initDashboard() {
             try {
+                document.getElementById('main-grid').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Memuatkan data cuaca...</p>";
                 const res = await fetch('https://api.data.gov.my/weather/forecast?contains=St@location__location_id');
                 const result = await res.json();
                 apiData = Array.isArray(result) ? result : [];
-                renderGrid(westStates, 'west-grid');
-                renderGrid(eastStates, 'east-grid');
-                updateRegionalSummaries();
-            } catch (e) { console.error(e); }
+                renderUnifiedGrid();
+            } catch (e) { 
+                console.error("Fetch Error:", e); 
+                document.getElementById('main-grid').innerHTML = "<p style='text-align:center; grid-column: 1/-1; color: var(--danger);'>Gagal memuatkan data.</p>";
+            }
         }
 
-        function renderGrid(list, elementId) {
-            const grid = document.getElementById(elementId);
+        function renderUnifiedGrid() {
+            const grid = document.getElementById('main-grid');
             grid.innerHTML = "";
-            list.forEach(state => {
+            
+            allStates.forEach(state => {
                 const stateData = apiData.find(d => d.location.location_name.toLowerCase().includes(state.toLowerCase().replace('w.p. ', '')));
+                
                 if (stateData) {
                     const card = document.createElement('div');
+                    const desc = (stateData.morning_forecast || '').toLowerCase();
+                    const sum = (stateData.summary_forecast || '').toLowerCase();
                     
-                    // --- Logik Penentuan Kesan Rutin ---
-                    const weatherDesc = (stateData.morning_forecast || '').toLowerCase();
                     let effectClass = '';
-                    if (weatherDesc.includes('cerah') || weatherDesc.includes('tiada hujan')) effectClass = 'effect-sun';
-                    else if (weatherDesc.includes('ribut') || weatherDesc.includes('hujan')) effectClass = 'effect-lightning';
-                    else if (weatherDesc.includes('berawan')) effectClass = 'effect-rainbow';
+                    // More sensitive detection for effects
+                    if (desc.includes('cerah') || desc.includes('tiada hujan') || sum.includes('cerah')) {
+                        effectClass = 'effect-sun';
+                    } else if (desc.includes('hujan') || desc.includes('ribut') || desc.includes('petir')) {
+                        effectClass = 'effect-lightning';
+                    }
 
                     card.className = `state-card ${effectClass}`;
                     card.onclick = () => openDrill(state, stateData);
+                    
                     card.innerHTML = `
-                        <strong>${state}</strong>
-                        <span class="temp">${stateData.max_temp || 32}°C</span>
-                        <span class="desc">${stateData.morning_forecast || 'Berawan'}</span>
+                        <div class="state-name">${state}</div>
+                        <div class="temp-main">${stateData.max_temp || '--'}°C</div>
+                        <div class="summary-text">${stateData.summary_forecast || 'Tiada ringkasan'}</div>
+                        
+                        <div class="today-mini-info">
+                            <div class="mini-row"><span class="mini-label">Pagi</span><span class="mini-val">${stateData.morning_forecast}</span></div>
+                            <div class="mini-row"><span class="mini-label">Tgh Hari</span><span class="mini-val">${stateData.afternoon_forecast}</span></div>
+                            <div class="mini-row"><span class="mini-label">Malam</span><span class="mini-val">${stateData.night_forecast}</span></div>
+                        </div>
                     `;
                     grid.appendChild(card);
                 }
             });
-        }
-
-        function updateRegionalSummaries() {
-            const kl = apiData.find(d => d.location.location_name.includes("Kuala Lumpur"));
-            const sabah = apiData.find(d => d.location.location_name.includes("Sabah"));
-            if(kl) document.getElementById('west-summary').innerText = kl.summary_forecast;
-            if(sabah) document.getElementById('east-summary').innerText = sabah.summary_forecast;
         }
 
         function openDrill(name, data) {
@@ -194,36 +223,44 @@
             cont.innerHTML = "";
             
             const history = apiData.filter(d => d.location.location_name === data.location.location_name).slice(0, 7);
+            
             history.forEach(day => {
-                const d = new Date(day.date);
+                const dateObj = new Date(day.date);
+                const formattedDate = dateObj.toLocaleDateString('ms-MY', {weekday: 'long', day: 'numeric', month: 'short'});
+                
                 cont.innerHTML += `
                     <div class="day-block">
-                        <div class="day-header">${d.toLocaleDateString('ms-MY', {weekday: 'long', day: 'numeric', month: 'short'})}</div>
-                        <div class="time-row"><span class="time-label">Suhu</span><span class="time-status">${day.min_temp}°C - ${day.max_temp}°C</span></div>
-                        <div class="time-row"><span class="time-label">Pagi</span><span class="time-status">${day.morning_forecast}</span></div>
-                        <div class="time-row"><span class="time-label">Tengah Hari</span><span class="time-status">${day.afternoon_forecast}</span></div>
-                        <div class="time-row"><span class="time-label">Malam</span><span class="time-status">${day.night_forecast}</span></div>
+                        <div class="day-header">
+                            <span>${formattedDate}</span>
+                            <span style="color: var(--text); opacity: 0.8;">${day.min_temp}°C - ${day.max_temp}°C</span>
+                        </div>
+                        <div class="modal-info-grid">
+                            <div class="info-item"><span class="info-label">Pagi</span>${day.morning_forecast}</div>
+                            <div class="info-item"><span class="info-label">Tgh Hari</span>${day.afternoon_forecast}</div>
+                            <div class="info-item"><span class="info-label">Malam</span>${day.night_forecast}</div>
+                        </div>
                     </div>`;
             });
-            document.getElementById('modalSummary').innerHTML = `Ramalan menunjukkan purata suhu ${data.max_temp || 32}°C.`;
-            renderPie([30, 40, 20, 10]);
+
+            document.getElementById('modalSummary').innerHTML = `Suhu maksimum <strong>${data.max_temp}°C</strong>. Petang: <strong>${data.afternoon_forecast}</strong>.`;
+            renderPie([30, 30, 20, 20]);
         }
 
         function renderPie(chartData) {
             const ctx = document.getElementById('drillPieChart').getContext('2d');
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                     labels: ['Hujan', 'Berawan', 'Ribut', 'Cerah'],
                     datasets: [{ data: chartData, backgroundColor: ['#38bdf8', '#94a3b8', '#f87171', '#fbbf24'], borderWidth: 0 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'white', font: { size: 10 } } } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'white' } } }, cutout: '70%' }
             });
         }
 
         function closeModal() { document.getElementById('drillModal').style.display = "none"; }
-        window.onclick = (e) => { if(e.target.id === 'drillModal') closeModal(); }
+        window.onclick = (e) => { if(e.target === document.getElementById('drillModal')) closeModal(); }
         initDashboard();
     </script>
 </body>
