@@ -18,10 +18,10 @@
 
         /* REGION SUMMARY CARDS */
         .region-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px; }
-        .region-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); }
-        .region-title { font-weight: bold; color: var(--accent); font-size: 1rem; margin-bottom: 5px; display: block; }
+        .region-card { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+        .region-title { font-weight: bold; color: var(--accent); font-size: 1rem; margin-bottom: 5px; display: block; z-index: 2; position: relative; }
 
-        /* STATE GRID - RESPONSIVE FIX */
+        /* STATE GRID */
         .forecast-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
@@ -40,43 +40,59 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
         }
-        .state-card:hover { border-color: var(--accent); background: #243146; }
+        .state-card:hover { border-color: var(--accent); background: #243146; transform: translateY(-3px); }
+        .state-card strong, .state-card .temp, .state-card .desc { position: relative; z-index: 2; }
         .state-card strong { font-size: 0.9rem; display: block; margin-bottom: 5px; }
         .state-card .temp { font-size: 1.5rem; font-weight: bold; color: var(--text); }
         .state-card .desc { font-size: 0.75rem; color: #94a3b8; margin-top: 5px; }
+
+        /* --- KESAN CUACA (EFFECTS) --- */
+        
+        /* 1. Sun Shine Effect */
+        .effect-sun::before {
+            content: ''; position: absolute; top: -20px; right: -20px; width: 60px; height: 60px;
+            background: radial-gradient(circle, #fbbf24 0%, transparent 70%);
+            border-radius: 50%; box-shadow: 0 0 20px #fbbf24;
+            animation: pulse-sun 3s infinite alternate; z-index: 1;
+        }
+        @keyframes pulse-sun { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.3); opacity: 1; } }
+
+        /* 2. Rainbow Rays Effect */
+        .effect-rainbow::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+            opacity: 0.3; filter: blur(2px); animation: rainbow-move 5s linear infinite; z-index: 1;
+        }
+        @keyframes rainbow-move { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+
+        /* 3. Lightning Rain Effect */
+        .effect-lightning { background: linear-gradient(to bottom, #1e293b, #0f172a); }
+        .effect-lightning::before {
+            content: ''; position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+            background: white; opacity: 0; pointer-events: none;
+            animation: flash 6s infinite; z-index: 1;
+        }
+        @keyframes flash { 
+            0%, 90%, 94%, 100% { opacity: 0; } 
+            92%, 95% { opacity: 0.15; } 
+        }
 
         /* MODAL RESPONSIVENESS */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); overflow-y: auto; }
         .modal-content { 
             background: var(--card); 
-            margin: 20px auto; 
-            padding: 20px; 
-            width: 95%; 
-            max-width: 900px; 
-            border-radius: 15px; 
-            border: 1px solid var(--accent); 
-            position: relative; 
+            margin: 20px auto; padding: 20px; width: 95%; max-width: 900px; 
+            border-radius: 15px; border: 1px solid var(--accent); position: relative; 
         }
         .close-btn { position: absolute; right: 15px; top: 10px; font-size: 2rem; cursor: pointer; color: var(--text); }
-        
         .drill-flex { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
         @media (max-width: 800px) { .drill-flex { grid-template-columns: 1fr; } }
-
-        /* DAY BLOCK FIXES */
         .day-block { margin-bottom: 20px; background: rgba(15, 23, 42, 0.5); padding: 12px; border-radius: 8px; }
         .day-header { font-size: 1rem; font-weight: bold; color: var(--accent); margin-bottom: 10px; border-bottom: 1px solid var(--border); }
-        
-        /* TIME ROW - TEXT WRAP FIX */
-        .time-row { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: space-between; 
-            padding: 8px 0; 
-            font-size: 0.9rem; 
-            border-bottom: 1px dotted #334155; 
-            gap: 10px;
-        }
+        .time-row { display: flex; flex-wrap: wrap; justify-content: space-between; padding: 8px 0; font-size: 0.9rem; border-bottom: 1px dotted #334155; gap: 10px; }
         .time-label { font-weight: bold; color: #94a3b8; min-width: 80px; }
         .time-status { flex: 1; text-align: right; min-width: 150px; }
 
@@ -144,11 +160,19 @@
                 const stateData = apiData.find(d => d.location.location_name.toLowerCase().includes(state.toLowerCase().replace('w.p. ', '')));
                 if (stateData) {
                     const card = document.createElement('div');
-                    card.className = 'state-card';
+                    
+                    // --- Logik Penentuan Kesan Rutin ---
+                    const weatherDesc = (stateData.morning_forecast || '').toLowerCase();
+                    let effectClass = '';
+                    if (weatherDesc.includes('cerah') || weatherDesc.includes('tiada hujan')) effectClass = 'effect-sun';
+                    else if (weatherDesc.includes('ribut') || weatherDesc.includes('hujan')) effectClass = 'effect-lightning';
+                    else if (weatherDesc.includes('berawan')) effectClass = 'effect-rainbow';
+
+                    card.className = `state-card ${effectClass}`;
                     card.onclick = () => openDrill(state, stateData);
                     card.innerHTML = `
                         <strong>${state}</strong>
-                        <span class="temp">${stateData.temp_max || 32}°C</span>
+                        <span class="temp">${stateData.max_temp || 32}°C</span>
                         <span class="desc">${stateData.morning_forecast || 'Berawan'}</span>
                     `;
                     grid.appendChild(card);
@@ -175,12 +199,13 @@
                 cont.innerHTML += `
                     <div class="day-block">
                         <div class="day-header">${d.toLocaleDateString('ms-MY', {weekday: 'long', day: 'numeric', month: 'short'})}</div>
+                        <div class="time-row"><span class="time-label">Suhu</span><span class="time-status">${day.min_temp}°C - ${day.max_temp}°C</span></div>
                         <div class="time-row"><span class="time-label">Pagi</span><span class="time-status">${day.morning_forecast}</span></div>
                         <div class="time-row"><span class="time-label">Tengah Hari</span><span class="time-status">${day.afternoon_forecast}</span></div>
                         <div class="time-row"><span class="time-label">Malam</span><span class="time-status">${day.night_forecast}</span></div>
                     </div>`;
             });
-            document.getElementById('modalSummary').innerHTML = `Ramalan menunjukkan purata suhu ${data.temp_max || 32}°C.`;
+            document.getElementById('modalSummary').innerHTML = `Ramalan menunjukkan purata suhu ${data.max_temp || 32}°C.`;
             renderPie([30, 40, 20, 10]);
         }
 
