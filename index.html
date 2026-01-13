@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY Cuaca | Ramalan Malaysia</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { 
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; 
+            --border: #334155; --danger: #f87171; --warning: #fbbf24; --success: #4ade80;
+        }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg); color: var(--text); 
+            margin: 0; padding: 1.5rem; line-height: 1.6; overflow-x: hidden; 
+        }
+        
+        header { 
+            text-align: center; border-bottom: 1px solid var(--border); 
+            margin-bottom: 2.5rem; padding-bottom: 1.5rem; 
+        }
+        h1 { color: var(--accent); margin: 0; font-size: 2.5rem; letter-spacing: -1px; }
+        header p { font-size: 1rem; opacity: 0.7; margin-top: 5px; }
+
+        .forecast-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 20px; width: 100%; max-width: 1400px; margin: 0 auto; justify-content: center;
+        }
+
+        .state-card { 
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px; 
+            padding: 20px; text-align: center; cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); z-index: 1;
+        }
+        .state-card:hover { border-color: var(--accent); transform: translateY(-8px); }
+
+        .state-name { font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-bottom: 5px; z-index: 5; position: relative; }
+        .temp-main { font-size: 2.2rem; font-weight: bold; margin: 10px 0; display: block; z-index: 5; position: relative; }
+        .summary-text { font-size: 0.85rem; color: #94a3b8; min-height: 40px; margin-bottom: 15px; z-index: 5; position: relative; }
+
+        .today-mini-info {
+            background: rgba(15, 23, 42, 0.85); border-radius: 12px; padding: 12px;
+            font-size: 0.8rem; text-align: left; border: 1px solid rgba(255,255,255,0.05); z-index: 5; position: relative;
+        }
+        .mini-row { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .mini-row:last-child { border: none; }
+        .mini-label { color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 0.65rem; }
+        .mini-val { color: var(--text); font-size: 0.85rem; }
+
+        /* --- WEATHER EFFECTS --- */
+        
+        /* Sun & Ray Effect */
+        .effect-sun::before {
+            content: ''; position: absolute; top: -30px; right: -30px; width: 140px; height: 140px;
+            background: radial-gradient(circle, #fbbf24 0%, #fbbf24 30%, transparent 70%);
+            border-radius: 50%; opacity: 0.5; animation: pulse-sun 3s infinite alternate ease-in-out; z-index: 2;
+        }
+        .sun-rays {
+            position: absolute; top: -40px; right: -40px; width: 160px; height: 160px;
+            background: repeating-conic-gradient(from 0deg, transparent 0deg 20deg, rgba(251, 191, 36, 0.1) 25deg 35deg);
+            animation: rotate-sun 20s linear infinite; z-index: 1;
+        }
+        @keyframes pulse-sun { from { transform: scale(1); opacity: 0.4; } to { transform: scale(1.3); opacity: 0.7; } }
+        @keyframes rotate-sun { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Lightning Flash Effect */
+        .effect-lightning { transition: background 0.1s; }
+        .flash-active { animation: lightning-bg 5s infinite; }
+        @keyframes lightning-bg {
+            0%, 94%, 96%, 100% { background: var(--card); }
+            95% { background: #475569; }
+            97% { background: #334155; }
+        }
+
+        /* MODAL STYLES */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); overflow-y: auto; backdrop-filter: blur(8px); }
+        .modal-content { background: var(--card); margin: 30px auto; padding: 25px; width: 95%; max-width: 950px; border-radius: 24px; border: 1px solid var(--border); position: relative; }
+        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 2.2rem; cursor: pointer; color: var(--text); z-index: 10; }
+        .drill-flex { display: grid; grid-template-columns: 1fr 320px; gap: 25px; margin-top: 20px; }
+        @media (max-width: 850px) { .drill-flex { grid-template-columns: 1fr; } }
+        .day-block { margin-bottom: 12px; background: #0f172a; padding: 18px; border-radius: 16px; border: 1px solid var(--border); }
+        .day-header { font-weight: bold; color: var(--accent); margin-bottom: 12px; font-size: 1rem; border-bottom: 1px solid #1e293b; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-info-list { display: flex; flex-direction: column; gap: 10px; }
+        .info-item { display: flex; flex-direction: column; border-left: 3px solid var(--accent); padding-left: 10px; }
+        .info-label { color: #64748b; font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
+        .stat-badge { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        canvas { max-width: 100%; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>MY Cuaca</h1>
+        <p>Ramalan Cuaca Terkini Seluruh Malaysia</p>
+    </header>
+
+    <div class="forecast-grid" id="main-grid"></div>
+
+    <div id="drillModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle" style="color: var(--accent); margin-top: 0;"></h2>
+            <div class="drill-flex">
+                <div id="sevenDayContainer"></div>
+                <div>
+                    <h4 style="margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Analisis Trend 7 Hari</h4>
+                    <div id="modalSummary" style="background: #0f172a; padding: 15px; border-radius: 12px; font-size: 0.85rem; margin-bottom: 20px; border: 1px solid var(--border); line-height: 1.6;"></div>
+                    <div style="height: 300px;"><canvas id="drillPieChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const allStates = [
+            "Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", 
+            "Perak", "Perlis", "Pulau Pinang", "Selangor", "Terengganu", 
+            "Kuala Lumpur", "Putrajaya", "Sabah", "Sarawak", "Labuan"
+        ];
+        
+        let apiData = [];
+        let myChart = null;
+
+        async function initDashboard() {
+            try {
+                document.getElementById('main-grid').innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Memuatkan data cuaca...</p>";
+                const res = await fetch('https://api.data.gov.my/weather/forecast?contains=St@location__location_id');
+                const result = await res.json();
+                apiData = Array.isArray(result) ? result : [];
+                apiData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                renderUnifiedGrid();
+            } catch (e) { 
+                document.getElementById('main-grid').innerHTML = "<p style='text-align:center; color: var(--danger);'>Gagal memuatkan data.</p>";
+            }
+        }
+
+        function renderUnifiedGrid() {
+            const grid = document.getElementById('main-grid');
+            grid.innerHTML = "";
+            
+            allStates.forEach(state => {
+                const stateHistory = apiData.filter(d => d.location.location_name.toLowerCase().includes(state.toLowerCase()));
+                const stateToday = stateHistory[0];
+                
+                if (stateToday) {
+                    const morning = (stateToday.morning_forecast || '').toLowerCase();
+                    const sum = (stateToday.summary_forecast || '').toLowerCase();
+                    
+                    // PENAPISAN LOGIK KESAN CUACA (REFINED)
+                    // 1. Cek jika benar-benar CERAH atau TIADA HUJAN
+                    let isSunny = morning.includes('cerah') || sum.includes('cerah') || morning.includes('tiada hujan') || sum.includes('tiada hujan');
+                    
+                    // 2. Cek jika ada petir/ribut (Keutamaan Tertinggi)
+                    let hasLightning = morning.includes('petir') || morning.includes('ribut') || sum.includes('petir');
+                    
+                    // 3. Cek jika ada hujan (Hanya jika bukan 'Tiada Hujan' dan bukan 'Sunny')
+                    let hasRain = (morning.includes('hujan') || sum.includes('hujan')) && !isSunny;
+
+                    let effectClass = '';
+                    if (hasLightning || hasRain) {
+                        effectClass = 'effect-lightning flash-active';
+                    } else if (isSunny) {
+                        effectClass = 'effect-sun';
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `state-card ${effectClass}`;
+                    card.onclick = () => openDrill(state, stateToday.location.location_name);
+                    
+                    card.innerHTML = `
+                        ${effectClass === 'effect-sun' ? '<div class="sun-rays"></div>' : ''}
+                        <div class="state-name">${state}</div>
+                        <div class="temp-main">${stateToday.min_temp}°C - ${stateToday.max_temp}°C</div>
+                        <div class="summary-text">${stateToday.summary_forecast || 'Tiada ringkasan'}</div>
+                        <div class="today-mini-info">
+                            <div class="mini-row"><span class="mini-label">Pagi</span><span class="mini-val">${stateToday.morning_forecast}</span></div>
+                            <div class="mini-row"><span class="mini-label">Tengah Hari</span><span class="mini-val">${stateToday.afternoon_forecast}</span></div>
+                            <div class="mini-row"><span class="mini-label">Malam</span><span class="mini-val">${stateToday.night_forecast}</span></div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                }
+            });
+        }
+
+        function openDrill(displayName, apiLocationName) {
+            document.getElementById('modalTitle').innerText = displayName + " (Ramalan 7 Hari)";
+            document.getElementById('drillModal').style.display = "block";
+            const cont = document.getElementById('sevenDayContainer');
+            cont.innerHTML = "";
+            const history = apiData.filter(d => d.location.location_name === apiLocationName).slice(0, 7);
+            let counts = { rain: 0, clear: 0, cloudy: 0, storm: 0 }, temps = [];
+
+            history.forEach((day, index) => {
+                const dateObj = new Date(day.date);
+                const formattedDate = dateObj.toLocaleDateString('ms-MY', {weekday: 'long', day: 'numeric', month: 'short'});
+                const todayLabel = (index === 0) ? " <span style='color:var(--success); font-size:0.7rem'>(HARI INI)</span>" : "";
+                const fullText = (day.morning_forecast + day.afternoon_forecast + day.night_forecast + day.summary_forecast).toLowerCase();
+                
+                if (fullText.includes('petir') || fullText.includes('ribut')) counts.storm++;
+                else if (fullText.includes('hujan') && !fullText.includes('tiada hujan')) counts.rain++;
+                else if (fullText.includes('cerah')) counts.clear++;
+                else counts.cloudy++;
+
+                if(day.max_temp) temps.push(day.max_temp);
+                if(day.min_temp) temps.push(day.min_temp);
+
+                cont.innerHTML += `
+                    <div class="day-block">
+                        <div class="day-header">
+                            <span>${formattedDate}${todayLabel}</span>
+                            <span class="stat-badge">${day.min_temp}°C - ${day.max_temp}°C</span>
+                        </div>
+                        <div class="modal-info-list">
+                            <div class="info-item"><span class="info-label">Pagi</span><span class="info-val">${day.morning_forecast}</span></div>
+                            <div class="info-item"><span class="info-label">Tengah Hari</span><span class="info-val">${day.afternoon_forecast}</span></div>
+                            <div class="info-item"><span class="info-label">Malam</span><span class="info-val">${day.night_forecast}</span></div>
+                        </div>
+                    </div>`;
+            });
+
+            const maxT = temps.length ? Math.max(...temps) : '--';
+            const minT = temps.length ? Math.min(...temps) : '--';
+            document.getElementById('modalSummary').innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div>🌤️ <strong>${counts.clear + counts.cloudy} Hari</strong> cuaca stabil.</div>
+                    <div>🌧️ <strong>${counts.rain + counts.storm} Hari</strong> amaran hujan/petir.</div>
+                    <div style="border-top: 1px solid var(--border); margin-top:5px; padding-top:10px;">
+                        🔥 Maksimum: <span style="color:var(--danger)">${maxT}°C</span> | ❄️ Minimum: <span style="color:var(--accent)">${minT}°C</span>
+                    </div>
+                </div>`;
+            renderPie([counts.rain, counts.cloudy, counts.storm, counts.clear]);
+        }
+
+        function renderPie(chartData) {
+            const ctx = document.getElementById('drillPieChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Hujan', 'Berawan', 'Ribut', 'Cerah'],
+                    datasets: [{ data: chartData, backgroundColor: ['#38bdf8', '#94a3b8', '#f87171', '#fbbf24'], borderWidth: 2, borderColor: '#1e293b' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: 'white' } } } }
+            });
+        }
+
+        function closeModal() { document.getElementById('drillModal').style.display = "none"; }
+        window.onclick = (e) => { if(e.target === document.getElementById('drillModal')) closeModal(); }
+        initDashboard();
+    </script>
+</body>
+</html>
